@@ -1,0 +1,41 @@
+# Étape 1 : build
+FROM php:8.2-cli AS builder
+
+# Installer dépendances système
+RUN apt-get update && apt-get install -y \
+    unzip git libsqlite3-dev \
+    && docker-php-ext-install pdo pdo_sqlite
+
+# Installer Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+WORKDIR /var/www/html
+
+# Copier les fichiers de dépendances en premier pour profiter du cache Docker
+COPY composer.json composer.lock ./
+
+# Installer les dépendances PHP (sans dev pour la prod)
+RUN composer install --no-dev --optimize-autoloader --no-scripts
+
+# Copier le reste du code
+COPY . .
+
+# Étape 2 : image finale
+FROM php:8.2-cli
+
+RUN apt-get update && apt-get install -y libsqlite3-dev \
+    && docker-php-ext-install pdo pdo_sqlite
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+WORKDIR /var/www/html
+
+# Copier depuis le builder
+COPY --from=builder /var/www/html .
+
+# Créer un utilisateur non-root (bonnes pratiques Docker)
+USER root
+
+EXPOSE 8000
+
+CMD ["php", "-S", "0.0.0.0:8000", "-t", "public"]

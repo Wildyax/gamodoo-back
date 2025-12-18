@@ -36,6 +36,60 @@ final class UserController extends AbstractController
         ]);
     }
 
+    #[Route('/users', name: 'api_user_list', methods: ['GET'])]
+    public function list(EntityManagerInterface $em): JsonResponse
+    {
+        $users = $em->getRepository(User::class)->findAll();
+
+        $data = array_map(static function (User $user) {
+            return [
+                'user_id' => $user->getId(),
+                'user_login' => $user->getLogin(),
+                'user_email' => $user->getEmail(),
+            ];
+        }, $users);
+
+        return $this->json($data);
+    }
+
+    #[Route('/login', name: 'api_login', methods: ['POST'])]
+    public function login(
+        Request $request,
+        EntityManagerInterface $em,
+        UserPasswordHasherInterface $passwordHasher
+    ): JsonResponse {
+        $data = json_decode($request->getContent(), true);
+
+        if (!isset($data['email'], $data['password'])) {
+            return $this->json([
+                'error' => [
+                    'code' => 'login_invalid_payload',
+                    'message' => 'Email et mot de passe requis'
+                ],
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        $user = $em->getRepository(User::class)->findOneBy([
+            'email' => $data['email'],
+        ]);
+
+        if (!$user || !$passwordHasher->isPasswordValid($user, $data['password'])) {
+            return $this->json([
+                'error' => [
+                    'code' => 'login_invalid_credentials',
+                    'message' => 'Identifiants invalides'
+                ],
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        return $this->json([
+            'user_id' => $user->getId(),
+            'user_login' => $user->getLogin(),
+            'user_email' => $user->getEmail(),
+        ]);
+    }
+
+
     #[Route('/users', name: 'user_create', methods: ['POST'])]
     public function create(
         Request $request,

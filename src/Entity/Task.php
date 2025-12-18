@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\TaskRepository;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: TaskRepository::class)]
@@ -14,30 +15,69 @@ class Task
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    private ?string $title = null;
-
-    #[ORM\Column(length: 255)]
     private ?string $description = null;
 
-    #[ORM\Column]
-    private ?bool $state = null;
+    #[ORM\Column(length: 255)]
+    private ?string $label = null;
 
     #[ORM\Column]
-    private ?int $difficulty = null;
+    private ?int $level = null;
+
+    #[ORM\Column(type: Types::ARRAY, nullable: true)]
+    private ?array $tags = null;
+
+    #[ORM\Column]
+    private ?bool $checked = null;
 
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getTitle(): ?string
+    public function getLabel(): ?string
     {
-        return $this->title;
+        return $this->label;
     }
 
-    public function setTitle(string $title): static
+    public function setLabel(string $label): static
     {
-        $this->title = $title;
+        $this->label = $label;
+
+        return $this;
+    }
+
+    public function getLevel(): ?int
+    {
+        return $this->level;
+    }
+
+    public function setLevel(int $level): static
+    {
+        $this->level = $level;
+
+        return $this;
+    }
+
+    public function getTags(): ?array
+    {
+        return $this->tags;
+    }
+
+    public function setTags(?array $tags): static
+    {
+        $this->tags = $tags;
+
+        return $this;
+    }
+
+    public function isChecked(): ?bool
+    {
+        return $this->checked;
+    }
+
+    public function setChecked(bool $checked): static
+    {
+        $this->checked = $checked;
 
         return $this;
     }
@@ -47,34 +87,10 @@ class Task
         return $this->description;
     }
 
-    public function setDescription(string $description): static
+    public function setDescription(?string $description): void
     {
         $this->description = $description;
-
-        return $this;
     }
 
-    public function isState(): ?bool
-    {
-        return $this->state;
-    }
 
-    public function setState(bool $state): static
-    {
-        $this->state = $state;
-
-        return $this;
-    }
-
-    public function getDifficulty(): ?int
-    {
-        return $this->difficulty;
-    }
-
-    public function setDifficulty(int $difficulty): static
-    {
-        $this->difficulty = $difficulty;
-
-        return $this;
-    }
 }

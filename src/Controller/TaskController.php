@@ -18,16 +18,17 @@ final class TaskController extends AbstractController
         $task = new Task();
         $task_data = json_decode($request->getContent(), true);
 
-        if (isset($task_data['title'])) $task_data->setTitle($task_data['title']);
-        if (isset($task_data['description'])) $task_data->setDescription($task_data['description']);
-        if (isset($task_data['status'])) $task_data->setStatus($task_data['status']);
-        if (isset($task_data['difficulty'])) $task_data->setPriority($task_data['difficulty']);
+        if (isset($task_data['label'])) $task->setLabel($task_data['label']);
+        if (isset($task_data['description'])) $task->setDescription($task_data['description']);
+        if (isset($task_data['level'])) $task->setLevel($task_data['level']);
+        if (isset($task_data['tags'])) $task->setTags($task_data['tags']);
+        if (isset($task_data['checked'])) $task->setChecked($task_data['checked']);
 
         $entityManager->persist($task);
         $entityManager->flush();
 
         return $this->json([
-            'data' => $task,
+            'data' => $task_data,
             'success' => (bool)$task,
         ]);
     }
@@ -57,10 +58,11 @@ final class TaskController extends AbstractController
     {
         $task_data = json_decode($request->getContent(), true);
 
-        if (isset($task_data['title'])) $task->setTitle($task_data['title']);
+        if (isset($task_data['label'])) $task->setLabel($task_data['label']);
         if (isset($task_data['description'])) $task->setDescription($task_data['description']);
-        if (isset($task_data['state'])) $task->setState($task_data['state']);
-        if (isset($task_data['difficulty'])) $task->setDifficulty($task_data['difficulty']);
+        if (isset($task_data['level'])) $task->setLevel($task_data['level']);
+        if (isset($task_data['tags'])) $task->setTags($task_data['tags']);
+        if (isset($task_data['checked'])) $task->setChecked($task_data['checked']);
 
         $entityManager->flush();
 

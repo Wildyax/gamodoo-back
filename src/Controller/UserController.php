@@ -15,7 +15,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 final class UserController extends AbstractController
 {
-    #[Route('/users/{user_id}', name: 'app_user_get', methods: ['GET'])]
+    #[Route('/users/{user_id}', name: 'user_get', methods: ['GET'])]
     public function get(EntityManagerInterface $em, int $user_id): JsonResponse
     {
         $user = $em->getRepository(User::class)->find($user_id);
@@ -36,7 +36,7 @@ final class UserController extends AbstractController
         ]);
     }
 
-    #[Route('/users', name: 'api_user_create', methods: ['POST'])]
+    #[Route('/users', name: 'user_create', methods: ['POST'])]
     public function create(
         Request $request,
         EntityManagerInterface $em,
@@ -75,7 +75,7 @@ final class UserController extends AbstractController
         ]);
     }
 
-    #[Route('/users/{user_id}', name: 'api_user_update', methods: ['PUT'])]
+    #[Route('/users/{user_id}', name: 'user_update', methods: ['PUT'])]
     public function update(
         Request $request,
         EntityManagerInterface $em,
@@ -128,4 +128,25 @@ final class UserController extends AbstractController
         ]);
     }
 
+    #[Route('/users/{user_id}', name: 'user_delete', methods: ['DELETE'])]
+    public function delete(
+        EntityManagerInterface $em,
+        int $user_id
+    ): JsonResponse {
+        $user = $em->getRepository(User::class)->find($user_id);
+
+        if (!$user) {
+            return $this->json([
+                'error' => [
+                    'code' => 'user_not_found',
+                    'message' => "Aucun utilisateur avec l'id $user_id n'a été trouvé"
+                ],
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        $em->remove($user);
+        $em->flush();
+
+        return $this->json(null, Response::HTTP_NO_CONTENT);
+    }
 }

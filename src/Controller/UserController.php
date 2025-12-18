@@ -15,7 +15,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 final class UserController extends AbstractController
 {
-    #[Route('/api/users/{user_id}', name: 'app_user_get', methods: ['GET'])]
+    #[Route('/users/{user_id}', name: 'app_user_get', methods: ['GET'])]
     public function get(EntityManagerInterface $em, int $user_id): JsonResponse
     {
         $user = $em->getRepository(User::class)->find($user_id);
@@ -36,7 +36,7 @@ final class UserController extends AbstractController
         ]);
     }
 
-    #[Route('/api/users', name: 'api_user_create', methods: ['POST'])]
+    #[Route('/users', name: 'api_user_create', methods: ['POST'])]
     public function create(
         Request $request,
         EntityManagerInterface $em,
@@ -63,10 +63,10 @@ final class UserController extends AbstractController
             ]);
         }
 
-       
+
         $em->persist($user);
         $em->flush();
-        
+
 
         return $this->json([
             'user_id' => $user->getId(),
@@ -75,7 +75,7 @@ final class UserController extends AbstractController
         ]);
     }
 
-    #[Route('/api/users/{user_id}', name: 'api_user_update', methods: ['PUT'])]
+    #[Route('/users/{user_id}', name: 'api_user_update', methods: ['PUT'])]
     public function update(
         Request $request,
         EntityManagerInterface $em,
@@ -120,7 +120,7 @@ final class UserController extends AbstractController
 
         $em->persist($user);
         $em->flush();
-        
+
         return $this->json([
             'user_id' => $user->getId(),
             'user_login' => $user->getLogin(),

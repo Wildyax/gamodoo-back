@@ -7,8 +7,6 @@ echo "Démarrage du container Symfony"
 if [ ! -d "vendor" ]; then
     echo "Installation des dépendances Composer"
     composer install --no-interaction --prefer-dist
-else
-    echo "✅ Dépendances Composer déjà installées"
 fi
 
 # Donner les droits nécessaires (cache, logs)
@@ -20,9 +18,16 @@ chmod -R 775 var
 if [ -f "bin/console" ]; then
     echo "Lancement des migrations Doctrine"
     php bin/console doctrine:migrations:migrate --no-interaction || true
+
+    echo "Insertion des fixtures"
+    php bin/console doctrine:fixtures:load --no-interaction || true
 fi
 
-echo "✅ Symfony prêt"
+# Initialisation des clés JWT
+if [ ! -f "config/jwt/private.pem" ]; then
+    echo "Génération des clés JWT"
+    php bin/console lexik:jwt:generate-keypair --overwrite
+fi
 
 # Lancer PHP-FPM
 exec php-fpm

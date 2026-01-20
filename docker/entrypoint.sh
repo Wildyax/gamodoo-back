@@ -9,8 +9,9 @@ if [ ! -d "vendor" ]; then
     composer install --no-interaction --prefer-dist
 fi
 
-# Donner les droits nécessaires (cache, logs)
+# Donner les droits nécessaires (cache, logs, db)
 mkdir -p var/cache var/log
+touch var/app.db
 chown -R www-data:www-data var
 chmod -R 775 var
 

@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use App\Entity\Job;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -21,6 +22,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(length: 180, unique: true)]
     private ?string $email = null;
+
+    #[ORM\Column(options: ['default' => 1])]
+    private int $level = 1;
+
+    #[ORM\Column(options: ['default' => 0])]
+    private int $exp = 0;
+
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Job $job = null;
+
 
     /**
      * @var list<string> The user roles
@@ -130,4 +142,39 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    public function getLevel(): int
+    {
+        return $this->level;
+    }
+
+    public function setLevel(int $level): static
+    {
+        $this->level = $level;
+
+        return $this;
+    }
+
+    public function getExp(): int
+    {
+        return $this->exp;
+    }
+
+    public function setExp(int $exp): static
+    {
+        $this->exp = $exp;
+
+        return $this;
+    }
+
+    public function getJob(): ?Job
+    {
+        return $this->job;
+    }
+
+    public function setJob(Job $job): static
+    {
+        $this->job = $job;
+
+        return $this;
+    }
 }

@@ -1,0 +1,2 @@
+# On s'assure ques les scripts soient toujours en .lf pour docker
+*.sh text eol=lf

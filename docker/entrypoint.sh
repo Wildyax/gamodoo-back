@@ -17,8 +17,7 @@ chmod -R 775 var
 # Lancer les migrations Doctrine
 if [ -f "bin/console" ]; then
     echo "Lancement des migrations Doctrine"
-    php bin/console make:migration
-    php bin/console doctrine:migrations:migrate --no-interaction || true
+    php bin/console doctrine:migrations:migrate --no-interaction --all-or-nothing || true
 
     echo "Insertion des fixtures"
     php bin/console doctrine:fixtures:load --no-interaction || true

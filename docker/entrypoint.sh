@@ -4,10 +4,9 @@ set -e
 echo "Démarrage du container Symfony"
 
 # Installer les dépendances PHP si vendor/ n'existe pas
-if [ ! -d "vendor" ]; then
-    echo "Installation des dépendances Composer"
-    composer install --no-interaction --prefer-dist
-fi
+echo "Installation des dépendances Composer"
+composer install --no-interaction --prefer-dist
+
 
 # Donner les droits nécessaires (cache, logs, db)
 mkdir -p var/cache var/log
@@ -18,7 +17,7 @@ chmod -R 775 var
 # Lancer les migrations Doctrine
 if [ -f "bin/console" ]; then
     echo "Lancement des migrations Doctrine"
-    php bin/console doctrine:migrations:migrate --no-interaction || true
+    php bin/console doctrine:migrations:migrate --no-interaction --all-or-nothing || true
 
     echo "Insertion des fixtures"
     php bin/console doctrine:fixtures:load --no-interaction || true

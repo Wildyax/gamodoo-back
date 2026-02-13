@@ -23,7 +23,7 @@ final class UserController extends AbstractController
     ): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
-        $job = $em->getRepository(Job::class)->find($data['job']);
+        $job = $em->getRepository(Job::class)->findById($data['job']);
 
         $user = new User();
         $user->setEmail($data['email']);

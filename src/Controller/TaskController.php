@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Tag;
 use App\Entity\Task;
 use App\Service\ExperienceManager;
 use Doctrine\ORM\EntityManagerInterface;
@@ -21,10 +22,22 @@ final class TaskController extends AbstractController
         $task = new Task();
         $task_data = json_decode($request->getContent(), true);
 
+        /** @var App\Repository\TagRepository $tag_repo */
+        $tag_repo = $em->getRepository(Tag::class);
+
         $task->setUser($user);
         $task->setLabel($task_data['label']);
         $task->setDescription($task_data['description']);
-        $task->setTags($task_data['tags']);
+        foreach ($task_data['tags'] as $tag_label) {
+            $tag = $tag_repo->findOneByLabel($tag_label);
+            if (!$tag) {
+                $tag = new Tag();
+                $tag->setLabel($tag_label);
+                $em->persist($tag);
+            }
+
+            $task->addTag($tag);
+        }
 
         // As new task, by default task is unchecked
         $task->setChecked(false);
@@ -51,15 +64,40 @@ final class TaskController extends AbstractController
         ]);
     }
 
+    #[Route('/api/task/filter', name: 'app_task_by_filter', methods: ['GET'])]
+    public function allByFilter(EntityManagerInterface $em, Request $request): JsonResponse
+    {
+        /** @@var App\Entity\User $user */
+        $user = $this->getUser();
+
+        /** @@var App\Repository\TaskRepository $taskRepo */
+        $taskRepo = $em->getRepository(Task::class);
+
+        $filters = [
+            'user' => $user,
+            'tags' => $request->query->get('tags'),
+            'label' => $request->query->get('label'),
+            'checked' => $request->query->has('checked')
+                ? filter_var($request->query->get('checked'), FILTER_VALIDATE_BOOLEAN)
+                : null,
+        ];
+
+        $tasks = $taskRepo->findByFilters($filters);
+
+        return $this->json([
+            'data' => $tasks,
+            'success' => true,
+        ]);
+    }
+
     #[Route('/api/task/{task_id}', name: 'app_task_show', methods: ['GET'])]
-    public function show(int $task_id, EntityManagerInterface $em)
+    public function show(int $task_id, EntityManagerInterface $em): JsonResponse
     {
         /** @@var App\Entity\User $user */
         $user = $this->getUser();
 
         /** @@var App\Repository\TaskRepository $task_repo */
         $task_repo = $em->getRepository(Task::class);
-
         $task = $task_repo->findOneByIdAndUser($task_id, $user);
 
         return $this->json([
@@ -68,16 +106,18 @@ final class TaskController extends AbstractController
         ]);
     }
 
+
+
     #[Route('/api/task/check/{task_id}', name: 'app_task_check', methods: ['GET'])]
-    public function check(int $task_id, EntityManagerInterface $em, ExperienceManager $exp_manager)
+    public function check(int $task_id, EntityManagerInterface $em, ExperienceManager $exp_manager): JsonResponse
     {
         /** @@var App\Entity\User $user */
         $user = $this->getUser();
 
         /** @@var App\Repository\TaskRepository $task_repo */
         $task_repo = $em->getRepository(Task::class);
-
         $task = $task_repo->findOneByIdAndUser($task_id, $user);
+
         if (!$task) {
             return $this->json([
                 'error' => [
@@ -108,9 +148,29 @@ final class TaskController extends AbstractController
         $task = $task_repo->findOneByIdAndUser($task_id, $user);
         $task_data = json_decode($request->getContent(), true);
 
+        /** @var App\Repository\TagRepository $tag_repo */
+        $tag_repo = $em->getRepository(Tag::class);
+
         $task->setLabel($task_data['label']);
         $task->setDescription($task_data['description']);
-        $task->setTags($task_data['tags']);
+        foreach ($task_data['tags'] as $tag_label) {
+            $tag = $tag_repo->findOneByLabel($tag_label);
+            if (!$tag) {
+                $tag = new Tag();
+                $tag->setLabel($tag_label);
+                $em->persist($tag);
+            }
+
+            if (!$task->getTags()->contains($tag)) {
+                $task->addTag($tag);
+            }
+        }
+
+        foreach ($task->getTags() as $task_tag) {
+            if (!in_array($task_tag->getLabel(), $task_data['tags'])) {
+                $task->removeTag($task_tag);
+            }
+        }
 
         $em->flush();
 

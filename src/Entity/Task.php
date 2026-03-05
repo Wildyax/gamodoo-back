@@ -3,7 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\TaskRepository;
-use Doctrine\DBAL\Types\Types;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Ignore;
 
@@ -23,9 +24,6 @@ class Task
     #[ORM\Column(length: 255)]
     private ?string $label = null;
 
-    #[ORM\Column(type: Types::ARRAY, nullable: true)]
-    private ?array $tags = null;
-
     #[ORM\Column]
     private ?bool $checked = null;
 
@@ -35,7 +33,18 @@ class Task
     #[ORM\ManyToOne(inversedBy: 'tasks')]
     #[ORM\JoinColumn(nullable: false)]
     #[Ignore]
-    private ?user $user = null;
+    private ?User $user = null;
+
+    /**
+     * @var Collection<int, Tag>
+     */
+    #[ORM\ManyToMany(targetEntity: Tag::class, mappedBy: 'tasks')]
+    private Collection $tags;
+
+    public function __construct()
+    {
+        $this->tags = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -50,18 +59,6 @@ class Task
     public function setLabel(string $label): static
     {
         $this->label = $label;
-
-        return $this;
-    }
-
-    public function getTags(): ?array
-    {
-        return $this->tags;
-    }
-
-    public function setTags(?array $tags): static
-    {
-        $this->tags = $tags;
 
         return $this;
     }
@@ -100,17 +97,42 @@ class Task
         return $this;
     }
 
-    public function getUser(): ?user
+    public function getUser(): ?User
     {
         return $this->user;
     }
 
-    public function setUser(?user $user): static
+    public function setUser(?User $user): static
     {
         $this->user = $user;
 
         return $this;
     }
 
+    /**
+     * @return Collection<int, Tag>
+     */
+    public function getTags(): Collection
+    {
+        return $this->tags;
+    }
 
+    public function addTag(Tag $tag): static
+    {
+        if (!$this->tags->contains($tag)) {
+            $this->tags->add($tag);
+            $tag->addTask($this);
+        }
+
+        return $this;
+    }
+
+    public function removeTag(Tag $tag): static
+    {
+        if ($this->tags->removeElement($tag)) {
+            $tag->removeTask($this);
+        }
+
+        return $this;
+    }
 }

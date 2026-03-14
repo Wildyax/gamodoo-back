@@ -40,4 +40,19 @@ class JobRepository extends ServiceEntityRepository
     //            ->getOneOrNullResult()
     //        ;
     //    }
+
+    /**
+     * 
+     * @return Job Return a Job object
+     */
+    public function findById($value): Job
+    {
+        return $this->createQueryBuilder('j')
+            ->andWhere('j.id = :id')
+            ->setParameter('id', $value)
+            ->getQuery()
+            ->getOneOrNullResult()
+        ;
+    }
+
 }

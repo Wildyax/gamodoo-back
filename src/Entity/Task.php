@@ -5,10 +5,13 @@ namespace App\Entity;
 use App\Repository\TaskRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Ignore;
 
 #[ORM\Entity(repositoryClass: TaskRepository::class)]
 class Task
 {
+    const BASE_EXPERIENCE = 10;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -20,14 +23,19 @@ class Task
     #[ORM\Column(length: 255)]
     private ?string $label = null;
 
-    #[ORM\Column]
-    private ?int $level = null;
-
     #[ORM\Column(type: Types::ARRAY, nullable: true)]
     private ?array $tags = null;
 
     #[ORM\Column]
     private ?bool $checked = null;
+
+    #[ORM\Column]
+    private ?int $difficulty = null;
+
+    #[ORM\ManyToOne(inversedBy: 'tasks')]
+    #[ORM\JoinColumn(nullable: false)]
+    #[Ignore]
+    private ?user $user = null;
 
     public function getId(): ?int
     {
@@ -42,18 +50,6 @@ class Task
     public function setLabel(string $label): static
     {
         $this->label = $label;
-
-        return $this;
-    }
-
-    public function getLevel(): ?int
-    {
-        return $this->level;
-    }
-
-    public function setLevel(int $level): static
-    {
-        $this->level = $level;
 
         return $this;
     }
@@ -90,6 +86,30 @@ class Task
     public function setDescription(?string $description): void
     {
         $this->description = $description;
+    }
+
+    public function getDifficulty(): ?int
+    {
+        return $this->difficulty;
+    }
+
+    public function setDifficulty(int $difficulty): static
+    {
+        $this->difficulty = $difficulty;
+
+        return $this;
+    }
+
+    public function getUser(): ?user
+    {
+        return $this->user;
+    }
+
+    public function setUser(?user $user): static
+    {
+        $this->user = $user;
+
+        return $this;
     }
 
 

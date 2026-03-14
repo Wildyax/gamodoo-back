@@ -3,7 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Task;
-use App\Repository\TaskRepository;
+use App\Service\ExperienceManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -12,31 +12,38 @@ use Symfony\Component\Routing\Attribute\Route;
 
 final class TaskController extends AbstractController
 {
-    #[Route('/task', name: 'app_task', methods: ['POST'])]
-    public function create(EntityManagerInterface $entityManager, Request $request, TaskRepository $taskRepository): JsonResponse
+    #[Route('/api/task', name: 'app_task', methods: ['POST'])]
+    public function create(EntityManagerInterface $em, Request $request): JsonResponse
     {
+        /** @@var App\Entity\User $user */
+        $user = $this->getUser();
+
         $task = new Task();
         $task_data = json_decode($request->getContent(), true);
 
-        if (isset($task_data['label'])) $task->setLabel($task_data['label']);
-        if (isset($task_data['description'])) $task->setDescription($task_data['description']);
-        if (isset($task_data['level'])) $task->setLevel($task_data['level']);
-        if (isset($task_data['tags'])) $task->setTags($task_data['tags']);
-        if (isset($task_data['checked'])) $task->setChecked($task_data['checked']);
+        $task->setUser($user);
+        $task->setLabel($task_data['label']);
+        $task->setDescription($task_data['description']);
+        $task->setTags($task_data['tags']);
 
-        $entityManager->persist($task);
-        $entityManager->flush();
+        // As new task, by default task is unchecked
+        $task->setChecked(false);
+        $task->setDifficulty($task_data['difficulty']);
+
+        $em->persist($task);
+        $em->flush();
 
         return $this->json([
-            'data' => $task_data,
             'success' => (bool)$task,
         ]);
     }
 
-    #[Route('/task', name: 'app_task_all', methods: ['GET'])]
-    public function all(TaskRepository $taskRepository): JsonResponse
+    #[Route('/api/task', name: 'app_task_all', methods: ['GET'])]
+    public function all(): JsonResponse
     {
-        $tasks = $taskRepository->findAll();
+        /** @@var App\Entity\User $user */
+        $user = $this->getUser();
+        $tasks = $user->getTasks();
 
         return $this->json([
             'data' => $tasks,
@@ -44,27 +51,68 @@ final class TaskController extends AbstractController
         ]);
     }
 
-    #[Route('/task/{id}', name: 'app_task_show', methods: ['GET'])]
-    public function show(?Task $task)
+    #[Route('/api/task/{task_id}', name: 'app_task_show', methods: ['GET'])]
+    public function show(int $task_id, EntityManagerInterface $em)
     {
+        /** @@var App\Entity\User $user */
+        $user = $this->getUser();
+
+        /** @@var App\Repository\TaskRepository $task_repo */
+        $task_repo = $em->getRepository(Task::class);
+
+        $task = $task_repo->findOneByIdAndUser($task_id, $user);
+
         return $this->json([
-            'data' => $task ?? [],
+            'data' => $task,
             'success' => (bool)$task,
         ]);
     }
 
-    #[Route('/task/{id}', name: 'app_task_edit', methods: ['PUT'])]
-    public function update(EntityManagerInterface $entityManager, ?Task $task, Request $request, TaskRepository $taskRepository): JsonResponse
+    #[Route('/api/task/check/{task_id}', name: 'app_task_check', methods: ['GET'])]
+    public function check(int $task_id, EntityManagerInterface $em, ExperienceManager $exp_manager)
     {
+        /** @@var App\Entity\User $user */
+        $user = $this->getUser();
+
+        /** @@var App\Repository\TaskRepository $task_repo */
+        $task_repo = $em->getRepository(Task::class);
+
+        $task = $task_repo->findOneByIdAndUser($task_id, $user);
+        if (!$task) {
+            return $this->json([
+                'error' => [
+                    'code' => 'task_not_found',
+                    'message' => 'Task not found for current user',
+                ]
+            ]);
+        }
+
+        $task->setChecked(true);
+        $level = $exp_manager->addExp($user, Task::BASE_EXPERIENCE * $task->getDifficulty());
+        $em->flush();
+
+        return $this->json([
+            'level' => $level,
+            'success' => (bool)$task,
+        ]);
+    }
+
+    #[Route('/api/task/{task_id}', name: 'app_task_edit', methods: ['PUT'])]
+    public function update(int $task_id, EntityManagerInterface $em, Request $request): JsonResponse
+    {
+        /** @@var App\Entity\User $user */
+        $user = $this->getUser();
+
+        /** @@var App\Repository\TaskRepository $task_repo */
+        $task_repo = $em->getRepository(Task::class);
+        $task = $task_repo->findOneByIdAndUser($task_id, $user);
         $task_data = json_decode($request->getContent(), true);
 
-        if (isset($task_data['label'])) $task->setLabel($task_data['label']);
-        if (isset($task_data['description'])) $task->setDescription($task_data['description']);
-        if (isset($task_data['level'])) $task->setLevel($task_data['level']);
-        if (isset($task_data['tags'])) $task->setTags($task_data['tags']);
-        if (isset($task_data['checked'])) $task->setChecked($task_data['checked']);
+        $task->setLabel($task_data['label']);
+        $task->setDescription($task_data['description']);
+        $task->setTags($task_data['tags']);
 
-        $entityManager->flush();
+        $em->flush();
 
         return $this->json([
             'data' => $task,
@@ -72,13 +120,19 @@ final class TaskController extends AbstractController
         ]);
     }
 
-    #[Route('/task/{id}', name: 'app_task_delete', methods: ['DELETE'])]
-    public function delete(EntityManagerInterface $entityManager, ?Task $task, Request $request, TaskRepository $taskRepository): JsonResponse
+    #[Route('/api/task/{task_id}', name: 'app_task_delete', methods: ['DELETE'])]
+    public function delete(int $task_id, EntityManagerInterface $em, Request $request): JsonResponse
     {
-        if($task)
-        {
-            $entityManager->remove($task);
-            $entityManager->flush();
+        /** @@var App\Entity\User $user */
+        $user = $this->getUser();
+
+        /** @@var App\Repository\TaskRepository $task_repo */
+        $task_repo = $em->getRepository(Task::class);
+        $task = $task_repo->findOneByIdAndUser($task_id, $user);
+
+        if ($task) {
+            $em->remove($task);
+            $em->flush();
         }
 
         return $this->json([
